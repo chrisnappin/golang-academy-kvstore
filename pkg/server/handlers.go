@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"regexp"
 	"store/pkg/kvstore"
+	"strings"
 )
 
 func ping(writer http.ResponseWriter, request *http.Request, username string,
@@ -182,4 +183,18 @@ func getKey(path string) string {
 	}
 
 	return key
+}
+
+// getKeyAlt extracts the key from the end of the REST path,
+// or returns an empty string if not defined.
+//
+// This version doesn't use a regex, and is here merely as a
+// contrived example for comparative benchmarking.
+func getKeyAlt(path string) string {
+	pathSections := strings.Split(path, "/")
+	if num := len(pathSections); num > 2 {
+		return pathSections[num-1]
+	}
+
+	return ""
 }

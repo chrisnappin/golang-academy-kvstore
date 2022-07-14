@@ -17,4 +17,20 @@ func checkGetKey(t *testing.T, path string, expectedKey string) {
 	if key := getKey(path); key != expectedKey {
 		t.Fatalf("Error - expecting %s but got %s", expectedKey, key)
 	}
+
+	if key := getKeyAlt(path); key != expectedKey {
+		t.Fatalf("Error - expecting %s but got %s", expectedKey, key)
+	}
+}
+
+func BenchmarkGetKey(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		getKey("/store/123")
+	}
+}
+
+func BenchmarkGetKeyAlt(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		getKeyAlt("/store/123")
+	}
 }
