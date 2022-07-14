@@ -12,11 +12,19 @@ import (
 const restServerPort = 8000
 
 func main() {
-	// TODO: make this a file, e.g. htaccess.log
-	htaccessLogger := log.New(os.Stdout, "HTACCESS", log.Ldate|log.Ltime)
+	htaccessFile, err := os.OpenFile("htaccess.log", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	// TODO: make this a file, e.g. store.log
-	appLogger := log.New(os.Stdout, "", log.Ldate|log.Ltime|log.Lshortfile)
+	htaccessLogger := log.New(htaccessFile, "HTACCESS", log.Ldate|log.Ltime)
+
+	storeFile, err := os.OpenFile("store.log", os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	appLogger := log.New(storeFile, "", log.Ldate|log.Ltime|log.Lshortfile)
 
 	appLogger.Println("Starting up...")
 
@@ -28,4 +36,7 @@ func main() {
 
 	appLogger.Println("Shutting down...")
 	kvstore.Close(store)
+
+	htaccessFile.Close()
+	storeFile.Close()
 }
