@@ -1,23 +1,32 @@
 // Package kvstore provides a thread-safe key value store.
 package kvstore
 
-import "errors"
+import (
+	"errors"
+	"time"
+)
 
-// Entry is a key value store entry field.
-type Entry struct {
-	Value string
-	Owner string
+// Entry is is stored against each key in the store.
+type entry struct {
+	Value       string
+	Owner       string
+	Reads       int
+	Writes      int
+	LastAccesed time.Time
 }
 
 // EntryInfo provides details on a single store key.
 type EntryInfo struct {
-	Key   string `json:"key"`
-	Owner string `json:"owner"`
+	Key    string `json:"key"`
+	Owner  string `json:"owner"`
+	Writes int    `json:"writes"`
+	Reads  int    `json:"reads"`
+	Age    int64  `json:"age"`
 }
 
 // KVStore is a thread-safe key value store.
 type KVStore struct {
-	data           map[string]*Entry
+	data           map[string]*entry
 	requestChannel chan *request
 }
 
@@ -94,7 +103,7 @@ type listAllResponse struct {
 // NewKVStore returns a new key value store instance.
 func NewKVStore() *KVStore {
 	store := &KVStore{
-		make(map[string]*Entry),
+		make(map[string]*entry),
 		make(chan *request),
 	}
 
@@ -183,6 +192,8 @@ func handleStoreOperations(s *KVStore) {
 				if ok {
 					if entry, ok := s.data[params.key]; ok {
 						// key is present
+						entry.Reads++
+						entry.LastAccesed = time.Now()
 						params.responseChannel <- &readResponse{entry.Value, true}
 					} else {
 						// key not present
@@ -193,10 +204,12 @@ func handleStoreOperations(s *KVStore) {
 			case writeOperation:
 				params, ok := request.params.(*writeRequest)
 				if ok {
-					if entry, ok := s.data[params.key]; ok {
-						if entry.Owner == params.username {
+					if existingEntry, ok := s.data[params.key]; ok {
+						if existingEntry.Owner == params.username {
 							// owner updating key
-							s.data[params.key].Value = params.value
+							existingEntry.Value = params.value
+							existingEntry.Writes++
+							existingEntry.LastAccesed = time.Now()
 							params.responseChannel <- &writeResponse{nil}
 						} else {
 							// someone else updating key
@@ -204,7 +217,7 @@ func handleStoreOperations(s *KVStore) {
 						}
 					} else {
 						// new key
-						s.data[params.key] = &Entry{params.value, params.username}
+						s.data[params.key] = &entry{params.value, params.username, 0, 1, time.Now()}
 						params.responseChannel <- &writeResponse{nil}
 					}
 				}
@@ -232,7 +245,9 @@ func handleStoreOperations(s *KVStore) {
 				if ok {
 					if entry, ok := s.data[params.key]; ok {
 						// key is present
-						params.responseChannel <- &listResponse{&EntryInfo{params.key, entry.Owner}}
+						params.responseChannel <- &listResponse{
+							&EntryInfo{params.key, entry.Owner, entry.Writes, entry.Reads,
+								time.Since(entry.LastAccesed).Milliseconds()}}
 					} else {
 						// key not present
 						params.responseChannel <- &listResponse{nil}
@@ -245,7 +260,8 @@ func handleStoreOperations(s *KVStore) {
 					// export all entries (if any) into a slice to return
 					entries := make([]*EntryInfo, 0, len(s.data))
 					for key, entry := range s.data {
-						entries = append(entries, &EntryInfo{key, entry.Owner})
+						entries = append(entries, &EntryInfo{key, entry.Owner, entry.Writes, entry.Reads,
+							time.Since(entry.LastAccesed).Milliseconds()})
 					}
 					params.responseChannel <- &listAllResponse{entries}
 				}
