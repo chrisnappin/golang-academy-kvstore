@@ -1,8 +1,39 @@
 package server
 
 import (
+	"io"
+	"net/http/httptest"
+	"regexp"
 	"testing"
 )
+
+func TestPing(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest("GET", "/ping", nil)
+
+	ping(recorder, request, "", nil, nil)
+
+	checkResponse(t, recorder, 200, "pong")
+}
+
+func checkResponse(t *testing.T, recorder *httptest.ResponseRecorder, expectedCode int, expectedBodyRegex string) {
+	t.Helper()
+	if actualCode := recorder.Result().StatusCode; actualCode != expectedCode {
+		t.Fatalf("Wrong response code, expected %d, got %d", expectedCode, actualCode)
+	}
+
+	defer recorder.Result().Body.Close()
+	bytes, err := io.ReadAll(recorder.Result().Body)
+	if err != nil {
+		t.Fatal("Error reading response: ", err)
+	}
+
+	regex := regexp.MustCompile(expectedBodyRegex)
+
+	if actualBody := string(bytes); regex.Find([]byte(actualBody)) == nil {
+		t.Fatalf("Wrong response body, expected to match regex \"%s\" but got \"%s\"", expectedBodyRegex, actualBody)
+	}
+}
 
 func TestPathWithKey(t *testing.T) {
 	checkGetKey(t, "/store/abc", "abc")
