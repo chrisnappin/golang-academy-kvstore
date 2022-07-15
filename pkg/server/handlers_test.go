@@ -16,6 +16,8 @@ func TestPing(t *testing.T) {
 	checkResponse(t, recorder, 200, "pong")
 }
 
+// checkResponse checks for the expected response code and body. If expectedBodyRegex is empty this is
+// used to mean to check the response body is empty.
 func checkResponse(t *testing.T, recorder *httptest.ResponseRecorder, expectedCode int, expectedBodyRegex string) {
 	t.Helper()
 	if actualCode := recorder.Result().StatusCode; actualCode != expectedCode {
@@ -28,10 +30,14 @@ func checkResponse(t *testing.T, recorder *httptest.ResponseRecorder, expectedCo
 		t.Fatal("Error reading response: ", err)
 	}
 
-	regex := regexp.MustCompile(expectedBodyRegex)
-
-	if actualBody := string(bytes); regex.Find([]byte(actualBody)) == nil {
-		t.Fatalf("Wrong response body, expected to match regex \"%s\" but got \"%s\"", expectedBodyRegex, actualBody)
+	actualBody := string(bytes)
+	if len(expectedBodyRegex) > 0 {
+		regex := regexp.MustCompile(expectedBodyRegex)
+		if regex.Find([]byte(actualBody)) == nil {
+			t.Fatalf("Wrong response body, expected to match regex \"%s\" but got \"%s\"", expectedBodyRegex, actualBody)
+		}
+	} else if len(actualBody) > 0 {
+		t.Fatalf("Wrong response body, expected empty but got \"%s\"", actualBody)
 	}
 }
 
