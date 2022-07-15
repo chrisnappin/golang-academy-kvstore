@@ -45,12 +45,14 @@ func Start(port int, store *kvstore.KVStore, accessLog *log.Logger, appLog *log.
 
 	gracefulShutdown := make(chan int)
 
+	// endpoints that don't require JWT bearer tokens
 	http.HandleFunc("/ping", withAccessLog(store, accessLog, appLog, ping))
 	http.HandleFunc("/login", withAccessLog(store, accessLog, appLog, login))
+
+	// endpoints that do require JWT bearer tokens
 	http.HandleFunc("/store/", withAccessLogAndSecurityCheck(store, accessLog, appLog, storeKey))
 	http.HandleFunc("/list/", withAccessLogAndSecurityCheck(store, accessLog, appLog, listKey))
 	http.HandleFunc("/list", withAccessLogAndSecurityCheck(store, accessLog, appLog, listAll))
-
 	http.HandleFunc("/shutdown", withAccessLogAndSecurityCheck(store, accessLog, appLog,
 		func(w http.ResponseWriter, r *http.Request, username string, s *kvstore.KVStore, logger *log.Logger) {
 			shutdown(w, r, username, s, logger, gracefulShutdown)
