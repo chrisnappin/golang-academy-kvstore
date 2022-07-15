@@ -53,7 +53,7 @@ type request struct {
 
 type readRequest struct {
 	key             string
-	responseChannel chan *readResponse
+	responseChannel chan<- *readResponse
 }
 
 type readResponse struct {
@@ -65,7 +65,7 @@ type writeRequest struct {
 	key             string
 	value           string
 	username        string
-	responseChannel chan *writeResponse
+	responseChannel chan<- *writeResponse
 }
 
 type writeResponse struct {
@@ -75,7 +75,7 @@ type writeResponse struct {
 type deleteRequest struct {
 	key             string
 	username        string
-	responseChannel chan *deleteResponse
+	responseChannel chan<- *deleteResponse
 }
 
 type deleteResponse struct {
@@ -85,7 +85,7 @@ type deleteResponse struct {
 
 type listRequest struct {
 	key             string
-	responseChannel chan *listResponse
+	responseChannel chan<- *listResponse
 }
 
 type listResponse struct {
@@ -93,7 +93,7 @@ type listResponse struct {
 }
 
 type listAllRequest struct {
-	responseChannel chan *listAllResponse
+	responseChannel chan<- *listAllResponse
 }
 
 type listAllResponse struct {
