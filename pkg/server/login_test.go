@@ -123,10 +123,12 @@ func TestWithAccessLogAndSecurityCheckValid(t *testing.T) {
 	// then use the token in a subsequent call
 	recorder, request = setupBearerTokenRequest("Bearer " + token)
 	handlerCalled := false
+	usernamePassed := ""
 
 	withAccessLogAndSecurityCheck(nil, testLogger, testLogger,
 		func(w http.ResponseWriter, r *http.Request, username string, kvstore *kvstore.KVStore, logger *log.Logger) {
 			handlerCalled = true
+			usernamePassed = username
 			fmt.Fprint(w, "All is ok")
 		})(recorder, request)
 
@@ -134,6 +136,10 @@ func TestWithAccessLogAndSecurityCheckValid(t *testing.T) {
 
 	if !handlerCalled {
 		t.Fatal("Handler should have been called")
+	}
+
+	if usernamePassed != "user_a" {
+		t.Fatalf("Handler passed wrong username, expecting %s but got %s", "user_a", usernamePassed)
 	}
 }
 

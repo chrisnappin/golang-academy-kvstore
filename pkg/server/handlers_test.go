@@ -4,6 +4,7 @@ import (
 	"io"
 	"net/http/httptest"
 	"regexp"
+	"store/pkg/kvstore"
 	"testing"
 )
 
@@ -11,9 +12,48 @@ func TestPing(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	request := httptest.NewRequest("GET", "/ping", nil)
 
-	ping(recorder, request, "", nil, nil)
+	ping(recorder, request, "", nil, testLogger)
 
 	checkResponse(t, recorder, 200, "pong")
+}
+
+func TestGetNoKeySpecified(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest("GET", "/store", nil) // no key specified
+	store := kvstore.NewKVStore()
+
+	storeKey(recorder, request, "", store, testLogger)
+
+	checkResponse(t, recorder, 400, "Bad Request")
+
+	kvstore.Close(store)
+}
+
+func TestGetNoSuchKey(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest("GET", "/store/abc", nil)
+	store := kvstore.NewKVStore()
+
+	storeKey(recorder, request, "", store, testLogger)
+
+	checkResponse(t, recorder, 404, "Not Found")
+
+	kvstore.Close(store)
+}
+
+func TestGetPopulatedKey(t *testing.T) {
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest("GET", "/store/abc", nil)
+	store := kvstore.NewKVStore()
+	if err := kvstore.Write(store, "abc", "123", "my_user"); err != nil {
+		t.Fatal("Error setting key: ", err)
+	}
+
+	storeKey(recorder, request, "", store, testLogger)
+
+	checkResponse(t, recorder, 200, "123")
+
+	kvstore.Close(store)
 }
 
 // checkResponse checks for the expected response code and body. If expectedBodyRegex is empty this is

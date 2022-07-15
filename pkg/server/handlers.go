@@ -65,7 +65,6 @@ func put(writer http.ResponseWriter, request *http.Request, username string,
 		fmt.Fprint(writer, "OK")
 	} else {
 		http.Error(writer, http.StatusText(http.StatusForbidden), http.StatusForbidden)
-		fmt.Fprint(writer, "Forbidden")
 	}
 }
 
@@ -85,7 +84,6 @@ func get(writer http.ResponseWriter, request *http.Request, username string,
 		fmt.Fprint(writer, value)
 	} else {
 		http.Error(writer, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-		fmt.Fprint(writer, "404 key not found")
 	}
 }
 
@@ -113,10 +111,8 @@ func deleteKey(writer http.ResponseWriter, request *http.Request, username strin
 		fmt.Fprint(writer, "OK")
 	case err != nil:
 		http.Error(writer, http.StatusText(http.StatusForbidden), http.StatusForbidden)
-		fmt.Fprint(writer, "Forbidden")
 	default:
 		http.Error(writer, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-		fmt.Fprint(writer, "404 key not found")
 	}
 }
 
@@ -135,7 +131,6 @@ func listKey(writer http.ResponseWriter, request *http.Request, username string,
 	entry := kvstore.List(store, key)
 	if entry == nil {
 		http.Error(writer, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-		fmt.Fprint(writer, "404 key not found")
 
 		return
 	}
